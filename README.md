@@ -1,213 +1,255 @@
-AI Dashboard Assistant - Tambo UI Starter
+AI Business Intelligence Workspace
 
-A minimal Next.js + Tambo AI starter for building AI-powered dashboards where users generate UI components using natural language.
-This template focuses on clean Tambo integration, typed components, and real-time UI rendering.
+A Next.js–based Generative AI Business Intelligence platform that transforms natural language prompts into live, interactive analytics components such as metrics, charts, comparisons, alerts, and insights.
 
-What This Template Does
+This project demonstrates how conversational AI can dynamically generate frontend UI components for business analytics workflows.
 
-This project demonstrates how to:
+Overview
 
-Use Tambo AI to generate UI components from natural language
+The AI Business Intelligence Workspace allows users to interact with data using plain English. Instead of manually building dashboards, users simply ask questions like:
 
-Render dashboards dynamically inside a Next.js App Router project
+“Show revenue metrics”
 
-Define strict, schema-driven components that AI can safely render
+“Compare Q1 vs Q4”
 
-Build interactive dashboards without hardcoding UI layouts
+“Generate business alerts”
 
-This is a starter, not a showcase. It’s meant to be extended.
+The system responds by rendering structured UI components in real time.
 
-Features
+This project uses Tambo AI to interpret tool-based responses and map them directly to React components.
 
-AI-driven UI generation using Tambo
+Key Features
 
-Real-time component rendering
+Conversational analytics interface
 
-Typed, schema-validated components
+Dynamic UI generation from AI responses
 
-Clean Next.js App Router setup
+Metric cards, graphs, comparison views, alerts, insights, and tables
 
-Tailwind-based responsive layout
+Workspace system for managing generated components
 
-Simple, readable component architecture
+Sidebar for past chats
 
-Prerequisites
+Fully responsive layout
 
-You’ll need:
+Tailwind-based design system
 
-Node.js 18+
+Modular component architecture
 
-npm
+Mock AI backend (easy to replace with real LLMs)
 
-A Tambo AI API key
+Architecture
+High-Level Flow
+User Prompt
+   ↓
+Next.js API Route (/api/tambo/message)
+   ↓
+AI-style Tool JSON Response
+   ↓
+Tambo Provider
+   ↓
+Workspace Store
+   ↓
+React Components Rendered in UI
 
-Getting Started
+Component Generation
 
-1. Clone the Repository
-   git clone
-   cd nextjs-tambo-ui-starter
-   npm install
+The backend returns structured messages such as:
 
-2. Environment Variables
+{
+  "type": "tool",
+  "name": "show_component_MetricCard",
+  "args": {
+    "title": "Monthly Revenue",
+    "value": "$245,000"
+  }
+}
 
-Create a .env.local file in the root:
 
-NEXT_PUBLIC_TAMBO_API_KEY=your_tambo_api_key_here
-
-3. Run the App
-   npm run dev
-
-Open http://localhost:3000 to view the dashboard.
+These tool messages are intercepted by Tambo and automatically mapped to registered React components.
 
 Project Structure
-src/
-├── app/
-│ ├── api/chat/route.ts # Tambo AI chat endpoint
-│ ├── client-providers.tsx # Tambo provider setup
-│ ├── globals.css # Global styles
-│ ├── layout.tsx # Root layout
-│ └── page.tsx # Main dashboard page
-│
-└── components/
-└── tambo/
-├── Dashboard.tsx # Main AI dashboard UI
-├── DataTable.tsx # Tabular data component
-├── MetricCard.tsx # Metric display component
-├── StatusBadge.tsx # Status indicator component
-├── ComponentParser.tsx# Maps AI output to components
-└── index.ts # Component registry
+API
+src/app/api/tambo/message/route.ts
 
-How It Works
 
-User types a natural language prompt
+Acts as a mock AI backend:
 
-Prompt is sent to /api/chat
+Reads user input
 
-Tambo AI responds with structured component instructions
+Detects intent (revenue, comparison, alerts, etc.)
 
-ComponentParser validates props using Zod
+Returns simulated AI responses
 
-Matching UI components render in real time
+Emits tool-based JSON for UI generation
 
-No layout logic is hardcoded.
+This can later be replaced with OpenAI, Claude, Gemini, or any custom LLM.
 
-Usage Examples
+Chat System
+src/components/chat/ChatInterface.tsx
 
-Try prompts like:
 
-Compare Kaushalendra vs Meenakshi expenses, savings, burn rate, and financial risk
+Handles:
 
-Show a dashboard for Kaushalendra using https://github.com/Kaushalendra-Marcus data to highlight performance and impact
+Message input
 
-Create a sales metrics dashboard
+Chat rendering
 
-Display system health status
+File uploads
 
-The AI chooses the correct components automatically.
+Component workspace
 
-Built-in Components
-DataTable
+Quick prompts
 
-Use for comparisons, reports, and lists.
+Integration with Tambo
 
-Typical use cases:
+AI Components
+src/components/tambo/
 
-Expense comparisons
 
-Payment reports
-
-User activity summaries
+Includes:
 
 MetricCard
 
-Use for single metrics with trends.
+GraphCard
 
-Typical use cases:
+ComparisonCard
 
-Sales KPIs
+InsightCard
 
-Revenue metrics
+AlertList
 
-Growth indicators
+BusinessSummaryTable
 
 StatusBadge
 
-Use for status and alerts.
+Each component:
 
-Typical use cases:
+Uses Zod schemas
 
-System health
+Supports dynamic props
 
-Payment states
+Provides intelligent defaults
 
-Operational alerts
+Is fully responsive
 
-Adding Custom Components
+Designed for real-time generation
 
-Create a new component in src/components/tambo/
+These are the building blocks of the AI workspace.
 
-Define a strict Zod schema for props
+Styling
+src/app/globals.css
 
-Export the component in this format:
 
-export const YourComponent = {
-name: "YourComponent",
-description: "Used to display ...",
-component: YourComponentFunction,
-propsSchema: YourComponentSchema,
-};
+Defines:
 
-Register it in components/tambo/index.ts
+Tailwind theme variables
 
-Tambo requires explicit schemas. No passthrough props.
+Light/Dark modes
 
-Troubleshooting
-Component Not Rendering
+Card system
 
-Check the AI response structure in /api/chat/route.ts
+Grid layouts
 
-Verify the component is registered in index.ts
+Animations
 
-Ensure Zod schemas are strict
+Scroll behavior
 
-API Key Issues
+Chat layout fixes
 
-Confirm .env.local exists
+Workspace responsiveness
 
-Restart the dev server after changes
+Tambo Provider
+src/components/providers/TamboProviderWrapper.tsx
 
-Validation Errors
 
-Avoid .passthrough() in Zod schemas
+Responsible for:
 
-Define all expected props explicitly
+Initializing Tambo
 
-Deployment
-Vercel (Recommended)
+Registering AI components
 
-Push the repo to GitHub
+Injecting API key
 
-Import into Vercel
+Wrapping the application
 
-Add NEXT_PUBLIC_TAMBO_API_KEY as an environment variable
+Without this provider, AI rendering will not function.
 
-Deploy
+Tech Stack
 
-Self-Hosted
-npm run build
-npm run start
+Next.js (App Router)
 
-License
+React
 
-MIT License
-See LICENSE for details.
+Tailwind CSS
 
-Contributing
+Tambo AI
 
-Fork the repo
+Zustand (workspace state)
 
-Create a feature branch
+Zod (schema validation)
 
-Keep the template minimal and clean
+TypeScript
 
-Open a pull request with a clear description
+Getting Started
+1. Install Dependencies
+npm install
+
+2. Environment Variables
+
+Create a .env.local file:
+
+NEXT_PUBLIC_TAMBO_API_KEY=your_api_key_here
+
+3. Run Development Server
+npm run dev
+
+
+Open:
+
+http://localhost:3000
+
+Example Prompts
+
+Show revenue metrics
+
+Compare quarters
+
+Business alerts
+
+Create sales trend
+
+Each prompt dynamically generates UI components.
+
+Current Implementation
+
+The AI responses are currently mocked in:
+
+src/app/api/tambo/message/route.ts
+
+
+This allows rapid prototyping without an external LLM.
+
+You can replace this with a real AI backend by returning Tambo-compatible tool JSON.
+
+Potential Extensions
+
+Persistent chat history
+
+Real LLM integration
+
+CSV ingestion
+
+Authentication
+
+Dashboard export
+
+Drag-and-drop workspace
+
+Database-backed analytics
+
+SaaS deployment
+
+Author
+
+Kaushalendra
