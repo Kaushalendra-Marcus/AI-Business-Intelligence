@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useState, useRef, useCallback } from "react"
 import Image from "next/image"
 
 import ChatInterface from "@/components/chat/ChatInterface"
@@ -8,9 +8,31 @@ import PastChatsSidebar from "@/components/chat/PastChatsSidebar"
 import { useWorkspaceStore } from "@/lib/store/workspace-store"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 
+// Define ChatLoadingSkeleton separately
+function ChatLoadingSkeleton() {
+  return (
+    <div className="h-full p-6">
+      <div className="max-w-3xl mx-auto space-y-6">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="animate-pulse">
+            <div
+              className={`h-16 ${
+                i % 2 === 0 ? "bg-gray-200" : "bg-gray-100"
+              } rounded-lg`}
+            ></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   const [mounted, setMounted] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarWidth, setSidebarWidth] = useState(320) // Initial width in pixels
+  const [isResizing, setIsResizing] = useState(false)
+  const sidebarRef = useRef<HTMLDivElement>(null)
   const activeComponentCount = useWorkspaceStore(
     state => state.activeComponentCount
   )
@@ -19,14 +41,80 @@ export default function Home() {
     setMounted(true)
   }, [])
 
+  // Handle mouse down on resizer
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
+  }
+
+  // Handle mouse move for resizing
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing || !sidebarOpen) return
+    
+    const newWidth = e.clientX
+    // Set min and max width constraints
+    if (newWidth > 200 && newWidth < 600) {
+      setSidebarWidth(newWidth)
+    }
+  }, [isResizing, sidebarOpen])
+
+  // Handle mouse up to stop resizing
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false)
+  }, [])
+
+  // Add event listeners for resizing
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp])
+
+  // Disable text selection during resize
+  useEffect(() => {
+    if (isResizing) {
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'col-resize'
+    } else {
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+    }
+  }, [isResizing])
+
   return (
     <div className="h-full flex bg-white">
-      {/* Left Sidebar */}
+      {/* Left Sidebar with Resizer */}
       {sidebarOpen && (
-        <div className="w-64 border-r border-gray-200 bg-white flex-shrink-0">
-          <ErrorBoundary>
-            <PastChatsSidebar onClose={() => setSidebarOpen(false)} />
-          </ErrorBoundary>
+        <div className="relative flex-shrink-0">
+          {/* Sidebar */}
+          <div 
+            ref={sidebarRef}
+            className="h-full border-r border-gray-200 bg-white"
+            style={{ width: `${sidebarWidth}px` }}
+          >
+            <ErrorBoundary>
+              <PastChatsSidebar onClose={() => setSidebarOpen(false)} />
+            </ErrorBoundary>
+          </div>
+          
+          {/* Resizer Handle */}
+          <div
+            className="absolute top-0 right-0 bottom-0 w-1 hover:w-2 bg-transparent hover:bg-blue-300 active:bg-blue-500 cursor-col-resize transition-all duration-150 z-20"
+            onMouseDown={handleMouseDown}
+            style={{
+              transform: 'translateX(50%)',
+              right: '-1px' // Half of the width
+            }}
+          />
         </div>
       )}
 
@@ -83,7 +171,14 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+              <button 
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => {
+                  if (window.confirm('Start a new chat? This will clear the current conversation.')) {
+                    window.location.reload()
+                  }
+                }}
+              >
                 New Chat
               </button>
             </div>
@@ -98,24 +193,6 @@ export default function Home() {
             </Suspense>
           </ErrorBoundary>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function ChatLoadingSkeleton() {
-  return (
-    <div className="h-full p-6">
-      <div className="max-w-3xl mx-auto space-y-6">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="animate-pulse">
-            <div
-              className={`h-16 ${
-                i % 2 === 0 ? "bg-gray-200" : "bg-gray-100"
-              } rounded-lg`}
-            ></div>
-          </div>
-        ))}
       </div>
     </div>
   )

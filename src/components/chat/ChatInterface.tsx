@@ -4,13 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useTamboThread, useTamboThreadInput } from '@tambo-ai/react'
 import { useTamboWorkspaceIntegration } from '@/lib/hooks/useTamboWorkspaceIntegration'
 import { useWorkspaceStore } from '@/lib/store/workspace-store'
-import MetricCard from '@/components/tambo/MetricCard'
-import GraphCard from '@/components/tambo/GraphCard'
-import BusinessSummaryTable from '@/components/tambo/BusinessSummaryTable'
-import ComparisonCard from '@/components/tambo/ComparisonCard'
-import InsightCard from '@/components/tambo/InsightCard'
-import AlertList from '@/components/tambo/AlertList'
-import StatusBadge from '@/components/tambo/StatusBadge'
+import ResizableComponentsPanel from '@/components/workspace/ResizableComponentsPanel'
 
 export default function ChatInterface() {
   const { thread, sendThreadMessage } = useTamboThread()
@@ -22,12 +16,14 @@ export default function ChatInterface() {
   // Get components from workspace store
   const componentsMap = useWorkspaceStore(state => state.components)
   const componentOrder = useWorkspaceStore(state => state.componentOrder)
-  const removeComponent = useWorkspaceStore(state => state.removeComponent)
   const clearWorkspace = useWorkspaceStore(state => state.clearWorkspace)
 
   const components = componentOrder
     .map(id => componentsMap[id])
     .filter(Boolean)
+
+  // Panel state
+  const [isPanelOpen, setIsPanelOpen] = useState(true)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -44,63 +40,6 @@ export default function ChatInterface() {
     scrollToBottom()
   }, [thread?.messages, components, scrollToBottom])
 
-  // Helper function to get grid column span
-  const getComponentColSpan = (type: string): string => {
-    switch (type) {
-      case 'graph':
-        return 'md:col-span-2 lg:col-span-2 xl:col-span-2';
-      case 'table':
-      case 'alert':
-      case 'comparison':
-        return 'md:col-span-2';
-      case 'status':
-        return 'md:col-span-2 lg:col-span-2';
-      case 'insight':
-        return 'md:col-span-2 lg:col-span-2 xl:col-span-2'; // Insight card spans 2 columns
-      default:
-        return '';
-    }
-  }
-
-  // Helper function to get size class based on component type - UPDATED HEIGHTS
-  const getComponentSizeClass = (type: string): string => {
-    switch (type) {
-      case 'metric':
-        return 'h-48 min-h-[192px]'; // Small fixed height for metric cards
-      case 'status':
-        return 'min-h-[250px] max-h-[500px]'; // Fixed height range for StatusBadge
-      case 'graph':
-        return 'min-h-[250px] max-h-[500px]'; // Fixed height range for GraphCard
-      case 'insight':
-        return 'min-h-[250px] max-h-[500px]'; // Fixed height range for InsightCard
-      case 'comparison':
-        return 'min-h-[250px] max-h-[500px]'; // Fixed height range for ComparisonCard
-      case 'table':
-        return 'min-h-[250px] max-h-[500px]'; // Fixed height range for BusinessSummaryTable
-      case 'alert':
-        return 'min-h-[250px] max-h-[500px]'; // Fixed height range for AlertList
-      default:
-        return 'min-h-[250px] max-h-[500px]';
-    }
-  }
-
-  // Helper function to get grid row span
-  const getComponentRowSpan = (type: string): string => {
-    switch (type) {
-      case 'metric':
-        return 'row-span-1';
-      case 'status':
-      case 'graph':
-      case 'comparison':
-      case 'insight':
-      case 'table':
-      case 'alert':
-        return 'row-span-2'; // All larger components take 2 rows
-      default:
-        return 'row-span-1';
-    }
-  }
-
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault()
     if (!value.trim() || isPending) return
@@ -109,6 +48,10 @@ export default function ChatInterface() {
 
     try {
       await submit()
+      // Auto-open panel when components are generated
+      if (!isPanelOpen) {
+        setIsPanelOpen(true)
+      }
     } catch (error) {
       console.error('Error sending message:', error)
       setError('Failed to send message. Please try again.')
@@ -152,14 +95,12 @@ export default function ChatInterface() {
     }
     
     if (!rawText) {
-      // Return a placeholder for user messages to ensure they're visible
       if (role === 'user') {
         return '[Message sent]'
       }
       return ''
     }
     
-    // For assistant messages, remove all JSON objects
     if (role === 'assistant') {
       const cleaned = rawText.replace(/\{"type":"tool".*?\}\}/g, '').trim()
       
@@ -170,7 +111,6 @@ export default function ChatInterface() {
       return cleaned
     }
     
-    // For user messages, return the raw text as-is
     return rawText.trim()
   }
 
@@ -181,102 +121,19 @@ export default function ChatInterface() {
     return `msg_${index}_${timestamp}_${random}`
   }
 
-  // Render component based on type
-  const renderComponent = (component: any) => {
-    try {
-      switch (component.type) {
-        case 'metric':
-          return <MetricCard key={component.id} {...component.props} />
-        case 'graph':
-          return <GraphCard key={component.id} {...component.props} />
-        case 'table':
-          return <BusinessSummaryTable key={component.id} {...component.props} />
-        case 'comparison':
-          return <ComparisonCard key={component.id} {...component.props} />
-        case 'insight':
-          return (
-            <div className="h-full w-full">
-              <InsightCard key={component.id} {...component.props} />
-            </div>
-          )
-        case 'alert':
-          return <AlertList key={component.id} {...component.props} />
-        case 'status':
-          return (
-            <div className="w-full h-full">
-              <StatusBadge key={component.id} {...component.props} />
-            </div>
-          )
-        default:
-          return null
-      }
-    } catch (error) {
-      console.error('Error rendering component:', component.type, error)
-      return null
-    }
-  }
-
   const quickPrompts = [
-    "Show revenue metrics",
-    "Create sales trend",
-    "Business alerts",
-    "Compare quarters",
-    "Generate business summary",
-    "Analyze growth metrics"
+    "Show revenue metrics for Nike",
+    "Analyze growth for Apple",
+    "Compare Amazon vs Microsoft",
+    "Generate business summary for Tesla",
+    "Show alerts for Walmart",
+    "Create dashboard for Campus X"
   ]
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
-      {/* Components Section */}
-      {components.length > 0 && (
-        <div className="border-b border-gray-200 bg-white p-6 overflow-y-auto">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-700">Generated Components</h3>
-              <button
-                onClick={() => {
-                  if (window.confirm('Clear all components?')) {
-                    clearWorkspace()
-                  }
-                }}
-                className="text-sm text-red-600 hover:text-red-700 px-3 py-1.5 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                Clear All
-              </button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-[minmax(200px,auto)]">
-              {components.map((component) => {
-                const sizeClass = getComponentSizeClass(component.type)
-                const rowSpan = getComponentRowSpan(component.type)
-                const colSpan = getComponentColSpan(component.type)
-                
-                return (
-                  <div 
-                    key={component.id} 
-                    className={`relative group ${rowSpan} ${colSpan}`}
-                  >
-                    <button
-                      onClick={() => removeComponent(component.id)}
-                      className="absolute -top-2 -right-2 z-10 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600 flex items-center justify-center"
-                      title="Remove"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                    <div className={`${sizeClass} w-full`}>
-                      {renderComponent(component)}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Messages Section */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
+    <div className="h-full flex flex-col bg-gray-50 relative">
+      {/* Main Chat Area */}
+      <div className={`flex-1 min-h-0 overflow-y-auto scrollbar-thin ${isPanelOpen ? '' : 'pb-4'}`}>
         <div className="max-w-4xl mx-auto p-6">
           {/* Welcome message */}
           {(!thread?.messages || thread.messages.length === 0) && components.length === 0 && (
@@ -287,7 +144,27 @@ export default function ChatInterface() {
                 </svg>
               </div>
               <h3 className="text-2xl font-semibold text-gray-900 mb-3">AI Business Intelligence</h3>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">Ask questions to generate insights and analytics components for your business data</p>
+              <p className="text-gray-600 mb-8 max-w-md mx-auto">Ask about any company to generate interactive analytics components</p>
+              
+              {/* Panel Toggle Button */}
+              {components.length > 0 && (
+                <div className="mb-6">
+                  <button
+                    onClick={() => setIsPanelOpen(!isPanelOpen)}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {isPanelOpen ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      )}
+                    </svg>
+                    {isPanelOpen ? 'Hide Components' : 'Show Components'}
+                  </button>
+                </div>
+              )}
+              
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-xl mx-auto">
                 {quickPrompts.map((prompt, index) => (
                   <button
@@ -434,8 +311,17 @@ export default function ChatInterface() {
         </div>
       </div>
 
+      {/* Resizable Components Panel */}
+      <ResizableComponentsPanel
+        isOpen={isPanelOpen && components.length > 0}
+        onToggle={() => setIsPanelOpen(!isPanelOpen)}
+        defaultHeight={400}
+        minHeight={200}
+        maxHeight={800}
+      />
+
       {/* Fixed Input Area */}
-      <div className="border-t border-gray-200 bg-white py-4 px-6 flex-shrink-0">
+      <div className="border-t border-gray-200 bg-white py-4 px-6 flex-shrink-0 relative z-20">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSend} className="relative">
             <div className="relative bg-white border border-gray-300 rounded-2xl hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 transition-all">
@@ -449,8 +335,8 @@ export default function ChatInterface() {
                     handleSend()
                   }
                 }}
-                placeholder="Message AI Business Intelligence..."
-                className="w-full bg-transparent px-4 py-3 text-sm resize-none focus:outline-none max-h-32 rounded-2xl"
+                placeholder="Ask about any company (e.g., 'Show revenue for Nike', 'Compare Apple vs Microsoft')..."
+                className="w-full bg-transparent px-12 py-3 text-sm resize-none focus:outline-none max-h-32 rounded-2xl"
                 rows={1}
                 disabled={isPending || isUploading}
                 style={{ 
@@ -458,6 +344,26 @@ export default function ChatInterface() {
                   maxHeight: '128px'
                 }}
               />
+              
+              {/* Panel Toggle Button (when components exist) */}
+              {components.length > 0 && (
+                <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPanelOpen(!isPanelOpen)}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    title={isPanelOpen ? "Hide components" : "Show components"}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {isPanelOpen ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      )}
+                    </svg>
+                  </button>
+                </div>
+              )}
               
               {/* Action buttons */}
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">

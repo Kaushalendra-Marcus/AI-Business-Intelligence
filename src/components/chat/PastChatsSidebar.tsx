@@ -35,12 +35,12 @@ export default function PastChatsSidebar({ onClose }: PastChatsSidebarProps) {
       if (content?.type === 'text') return content.text
       return ''
     }
-    
+
     const content = getMessageContent(message.content)
     const messageDate = new Date(message.createdAt)
     const now = new Date()
     const diffMinutes = Math.floor((now.getTime() - messageDate.getTime()) / (1000 * 60))
-    
+
     // Format timestamp
     let timestamp: string
     if (diffMinutes < 1) {
@@ -54,14 +54,14 @@ export default function PastChatsSidebar({ onClose }: PastChatsSidebarProps) {
       const days = Math.floor(diffMinutes / 1440)
       timestamp = `${days}d ago`
     }
-    
+
     // Create title from first few words
     const words = content.split(' ').slice(0, 4).join(' ')
     const title = words.length > 0 ? `${words}...` : 'Message'
-    
+
     // Preview (truncated content)
-    const preview = content.length > 60 
-      ? content.substring(0, 60) + '...' 
+    const preview = content.length > 60
+      ? content.substring(0, 60) + '...'
       : content || 'No content'
 
     return {
@@ -85,19 +85,93 @@ export default function PastChatsSidebar({ onClose }: PastChatsSidebarProps) {
   const handleChatClick = (messageId: string) => {
     const messageElement = document.getElementById(`message-${messageId}`)
     if (messageElement) {
-      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      // Highlight the message briefly
-      messageElement.classList.add('bg-yellow-50', 'border', 'border-yellow-200')
+      messageElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      })
+
+      // Frosty blue glass effect
+      messageElement.classList.add(
+        'bg-gradient-to-br',
+        'from-blue-50/95',       // Cool blue-white
+        'via-sky-50/90',         // Sky blue tint
+        'to-white/95',           // Back to white
+        'border',
+        'border-sky-200/50',     // Sky blue border
+        'shadow-[0_0_0_1px_rgba(186,230,253,0.3)]', // Inner light blue border
+        'shadow-[0_4px_20px_-2px_rgba(56,189,248,0.15)]', // Blue shadow
+        'shadow-[0_8px_32px_0_rgba(14,165,233,0.08)]', // Deeper blue shadow
+        'rounded-2xl',
+        'backdrop-blur-[2px]'
+      )
+
+      // Create a shimmering effect
+      const shimmer = document.createElement('div')
+      shimmer.className = 'absolute inset-0 rounded-2xl pointer-events-none'
+      shimmer.style.background = 'linear-gradient(90deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)'
+      shimmer.style.opacity = '0'
+      shimmer.style.zIndex = '1'
+
+      messageElement.style.position = 'relative'
+      messageElement.appendChild(shimmer)
+
+      // Animate the shimmer
+      shimmer.animate(
+        [
+          { transform: 'translateX(-100%)', opacity: '0' },
+          { transform: 'translateX(100%)', opacity: '0.7' },
+          { transform: 'translateX(200%)', opacity: '0' }
+        ],
+        {
+          duration: 1500,
+          easing: 'ease-in-out'
+        }
+      )
+
+      // Gentle floating animation
+      messageElement.animate(
+        [
+          { transform: 'translateY(0px)' },
+          { transform: 'translateY(-3px)' },
+          { transform: 'translateY(0px)' }
+        ],
+        {
+          duration: 1200,
+          easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+        }
+      )
+
       setTimeout(() => {
-        messageElement.classList.remove('bg-yellow-50', 'border', 'border-yellow-200')
-      }, 2000)
+        // Remove shimmer element
+        if (shimmer.parentNode) {
+          shimmer.parentNode.removeChild(shimmer)
+        }
+
+        // Remove all added classes
+        messageElement.classList.remove(
+          'bg-gradient-to-br',
+          'from-blue-50/95',
+          'via-sky-50/90',
+          'to-white/95',
+          'border',
+          'border-sky-200/50',
+          'shadow-[0_0_0_1px_rgba(186,230,253,0.3)]',
+          'shadow-[0_4px_20px_-2px_rgba(56,189,248,0.15)]',
+          'shadow-[0_8px_32px_0_rgba(14,165,233,0.08)]',
+          'rounded-2xl',
+          'backdrop-blur-[2px]'
+        )
+
+        // Reset position style
+        messageElement.style.position = ''
+      }, 2200)
     }
   }
-
   return (
     <div className="w-full h-full bg-white flex flex-col">
       {/* Sidebar Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             {onClose && (
@@ -117,7 +191,7 @@ export default function PastChatsSidebar({ onClose }: PastChatsSidebarProps) {
             {chatMessages.length} messages
           </div>
         </div>
-        
+
         {/* Search */}
         <div className="relative">
           <input
@@ -150,9 +224,8 @@ export default function PastChatsSidebar({ onClose }: PastChatsSidebarProps) {
                 <div
                   key={msg.id}
                   onClick={() => handleChatClick(msg.messageId)}
-                  className={`p-3 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                    msg.unread ? 'bg-blue-50 border border-blue-100' : ''
-                  } ${msg.role === 'user' ? 'border-l-2 border-blue-500' : 'border-l-2 border-green-500'}`}
+                  className={`p-3 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${msg.unread ? 'bg-blue-50 border border-blue-100' : ''
+                    } ${msg.role === 'user' ? 'border-l-2 border-blue-500' : 'border-l-2 border-green-500'}`}
                 >
                   <div className="flex items-start justify-between mb-1">
                     <div className="flex items-center">
